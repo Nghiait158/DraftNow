@@ -4,6 +4,8 @@ const cors = require('cors');
 require('dotenv').config();
 
 const connectDB = require('./config/db');
+const authRoutes = require('./routes/auth');   
+
 
 const app = express();
 const server = http.createServer(app);
@@ -15,7 +17,11 @@ app.use(express.json());
 // Connect database
 connectDB();
 
-// Test route
+
+// Routes
+app.use('/api/auth', authRoutes);
+
+// Health route
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running' });
 });
