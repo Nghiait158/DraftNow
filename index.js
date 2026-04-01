@@ -5,6 +5,7 @@ require('dotenv').config();
 
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/auth');   
+const documentRoutes = require('./routes/documents');
 
 
 const app = express();
@@ -18,8 +19,12 @@ app.use(express.json());
 connectDB();
 
 
-// Routes
+// Routes auth
 app.use('/api/auth', authRoutes);
+
+// Routes documents
+app.use('/api/documents', documentRoutes);
+
 
 // Health route
 app.get('/health', (req, res) => {
