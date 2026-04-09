@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Socket Test</title>
+</head>
+<body>
+  <h2>Socket.io Test</h2>
+
+  <div>
+    <textarea id="token" placeholder="Paste JWT token vào đây"style="width:100%; height:60px; font-size:11px; font-family:monospace"></textarea>    
+    <input id="docId" placeholder="Document ID" style="width:200px" />
+    <button onclick="connect()">Connect</button>
+    <button onclick="disconnect()">Disconnect</button>
+  </div>
+
+  <br>
+
+  <div>
+    <input id="delta" placeholder='Delta: {"ops":[{"insert":"Hello"}]}' style="width:500px" />
+    <button onclick="sendChange()">Send Change</button>
+  </div>
+
+  <br>
+
+  <div id="log" style="background:#f4f4f4; padding:10px; height:400px; overflow-y:scroll; font-family:monospace; font-size:13px;"></div>
+
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script>
+    let socket;
+
+    function log(msg, color = 'black') {
+      const div = document.getElementById('log');
+      const time = new Date().toLocaleTimeString();
+      div.innerHTML += `<div style="color:${color}">[${time}] ${msg}</div>`;
+      div.scrollTop = div.scrollHeight;
+    }
+
+    function connect() {
+      const token = document.getElementById('token').value.trim();
+      const docId = document.getElementById('docId').value.trim();
+
+      if (!token || !docId) {
+        alert('Điền token và docId trước!');
+        return;
+      }
+
+      // Kết nối Socket.io với token trong auth
+      socket = io('http://localhost:3000', {
+        auth: { token },
+      });
+
+      socket.on('connect', () => {
+        log(`✅ Connected! Socket ID: ${socket.id}`, 'green');
+
+        // Join document ngay sau khi connect
+        socket.emit('join-document', {
+          docId,
+          user: { name: 'Test User', email: 'test@gmail.com' },
+        });
+        log(`📤 Emitted: join-document (docId: ${docId})`, 'blue');
+      });
+
+      socket.on('load-document', (doc) => {
+        log(`📄 Received: load-document — title: "${doc.title}"`, 'green');
+        log(`   Content: ${JSON.stringify(doc.content)}`, 'gray');
+      });
+
+      socket.on('users-in-document', (users) => {
+        log(`👥 Users in document: ${JSON.stringify(users)}`, 'purple');
+      });
+
+      socket.on('receive-changes', (delta) => {
+        log(`📥 Received changes: ${JSON.stringify(delta)}`, 'orange');
+      });
+
+      socket.on('error', (err) => {
+        log(`❌ Error: ${err.message}`, 'red');
+      });
+
+      socket.on('disconnect', () => {
+        log('🔌 Disconnected', 'gray');
+      });
+
+      socket.on('connect_error', (err) => {
+        log(`❌ Connection error: ${err.message}`, 'red');
+      });
+    }
+
+    function disconnect() {
+      if (socket) {
+        socket.emit('leave-document', {
+          docId: document.getElementById('docId').value.trim(),
+        });
+        socket.disconnect();
+        log('👋 Manually disconnected', 'gray');
+      }
+    }
+
+    function sendChange() {
+      const docId = document.getElementById('docId').value.trim();
+      const deltaStr = document.getElementById('delta').value.trim();
+
+      try {
+        const delta = JSON.parse(deltaStr);
+        socket.emit('send-changes', { docId, delta });
+        log(`📤 Sent changes: ${JSON.stringify(delta)}`, 'blue');
+      } catch (e) {
+        alert('Delta không hợp lệ, phải là JSON!');
+      }
+    }
+  </script>
+</body>
+</html>

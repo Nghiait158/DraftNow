@@ -36,7 +36,12 @@ const documentSchema = new mongoose.Schema(
 // kiểm tra user có quyền xem hay ko??
 documentSchema.methods.canView = function (userId) {
   if (this.isPublic) return true;
-  if (this.owner.toString() === userId.toString()) return true;
+  const ownerId = this.owner._id
+    ? this.owner._id.toString()
+    : this.owner.toString();
+
+  if (ownerId === userId.toString()) return true;
+
   return this.collaborators.some(
     (c) => c.user.toString() === userId.toString()
   );
@@ -44,10 +49,16 @@ documentSchema.methods.canView = function (userId) {
 
 //  kiểm tra user có quyền edit ko??
 documentSchema.methods.canEdit = function (userId) {
-  if (this.owner.toString() === userId.toString()) return true;
+   const ownerId = this.owner._id
+    ? this.owner._id.toString()
+    : this.owner.toString();
+
+  if (ownerId === userId.toString()) return true;
+
   return this.collaborators.some(
     (c) =>
-      c.user.toString() === userId.toString() && c.permissions === 'editor'
+      c.user.toString() === userId.toString() &&
+      c.permission === 'editor'
   );
 };
 
